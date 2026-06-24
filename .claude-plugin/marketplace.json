@@ -1,0 +1,8 @@
+[
+  {
+    "plugin": "mla-advisory",
+    "source": "./mla-advisory",
+    "description": "Skills for the Advisory team at MLA Canada — competitive analysis, research tooling, and market intelligence.",
+    "category": "advisory"
+  }
+]
