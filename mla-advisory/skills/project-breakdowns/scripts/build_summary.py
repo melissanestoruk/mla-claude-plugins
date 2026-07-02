@@ -5,6 +5,13 @@ Generates a presale pricing summary Excel workbook from structured JSON data.
 
 Usage:
     python build_summary.py --data project_data.json --output "Harth_Pricing_Summary.xlsx"
+
+Methodology (MLA standard, per Melissa Nestoruk):
+  - Per row: Avg Interior SF = AVERAGE(min SF, max SF); Avg Price = AVERAGE(starting, top-end)
+  - Weighted Avg SF    = SUMPRODUCT(avg SFs, counts) / total unit count
+  - Weighted Avg Price = SUMPRODUCT(avg prices, counts) / total unit count
+  - Average PSF        = Weighted Avg Price / Weighted Avg SF
+All computed as live Excel formulas so edits to counts/prices/sizes recalculate.
 """
 
 import argparse
@@ -36,9 +43,18 @@ CENTER = Alignment(horizontal="center", vertical="center")
 LEFT   = Alignment(horizontal="left",   vertical="center")
 RIGHT  = Alignment(horizontal="right",  vertical="center")
 
+MONEY_FMT = '"$"#,##0'
+PSF_FMT   = '"$"#,##0.00'
+SF_FMT    = '#,##0.0'
 
-def money(v):
-    return f"${v:,.0f}" if v else ""
+
+def relabel(header: str, price_label: str) -> str:
+    """Swap the generic 'Price'/'PPSF' wording for a project-specific label,
+    e.g. price_label='Rent (Monthly)' turns 'Starting Price' into
+    'Starting Rent (Monthly)' and 'Starting PPSF' into 'Starting Rent PSF'."""
+    if price_label == "Price":
+        return header
+    return header.replace("PPSF", "Rent PSF").replace("Price", price_label)
 
 
 def apply_header(cell, text):
@@ -63,24 +79,26 @@ def apply_data(cell, value, align=LEFT, number_format=None, fill=None, bold=Fals
 # ── Summary Sheet ────────────────────────────────────────────────────────────
 
 SUMMARY_HEADERS = [
-    "Unit Type",
-    "Plan Name(s)",
-    "Count",
-    "Min Interior SF",
-    "Max Interior SF",
-    "Starting Price",
-    "Est. Top-End Price",
-    "Starting PPSF",
+    "Unit Type",            # A
+    "Plan Name(s)",         # B
+    "Count",                # C
+    "Min Interior SF",      # D
+    "Max Interior SF",      # E
+    "Avg Interior SF",      # F
+    "Starting Price",       # G
+    "Est. Top-End Price",   # H
+    "Avg Price",            # I
+    "Starting PPSF",        # J
 ]
 
-COL_WIDTHS_SUMMARY = [18, 28, 9, 16, 16, 18, 20, 14]
+COL_WIDTHS_SUMMARY = [18, 26, 9, 15, 15, 15, 17, 18, 17, 14]
 
 
-def build_summary_sheet(ws, project_name: str, rows: list[dict]):
+def build_summary_sheet(ws, project_name: str, rows: list[dict], price_label: str = "Price"):
     ws.title = "Summary"
 
     # Title
-    ws.merge_cells("A1:H1")
+    ws.merge_cells("A1:J1")
     title_cell = ws["A1"]
     title_cell.value = project_name
     title_cell.font = TITLE_FONT
@@ -88,102 +106,104 @@ def build_summary_sheet(ws, project_name: str, rows: list[dict]):
     title_cell.fill = LIGHT_GREY
 
     # Subtitle
-    ws.merge_cells("A2:H2")
+    ws.merge_cells("A2:J2")
     ws["A2"].value = "Pricing Summary — Unit Type Breakdown"
     ws["A2"].font = BOLD_FONT
     ws["A2"].alignment = CENTER
 
     ws.row_dimensions[1].height = 24
     ws.row_dimensions[2].height = 16
-
-    # Blank row
     ws.row_dimensions[3].height = 6
 
-    # Column widths
     for i, w in enumerate(COL_WIDTHS_SUMMARY, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
     # Header row (row 4)
     for col_idx, header in enumerate(SUMMARY_HEADERS, start=1):
-        apply_header(ws.cell(row=4, column=col_idx), header)
+        apply_header(ws.cell(row=4, column=col_idx), relabel(header, price_label))
     ws.row_dimensions[4].height = 20
 
     # Data rows (starting row 5)
     data_start = 5
     for row_num, r in enumerate(rows, start=data_start):
-        count = r.get("count") or 0
-        min_sf = r.get("min_sf")
-        max_sf = r.get("max_sf")
-        start_price = r.get("starting_price")
-        top_price = r.get("top_end_price")
-
         apply_data(ws.cell(row=row_num, column=1), r.get("unit_type", ""))
         apply_data(ws.cell(row=row_num, column=2), r.get("plan_names", ""))
+
         # Count cell — yellow (editable input)
         c_count = ws.cell(row=row_num, column=3)
-        c_count.value = count
+        c_count.value = r.get("count") or 0
         c_count.font = NORMAL_FONT
         c_count.fill = YELLOW
         c_count.alignment = CENTER
         c_count.border = THIN_BORDER
 
-        apply_data(ws.cell(row=row_num, column=4), min_sf, align=CENTER)
-        apply_data(ws.cell(row=row_num, column=5), max_sf, align=CENTER)
+        apply_data(ws.cell(row=row_num, column=4), r.get("min_sf"), align=CENTER)
+        apply_data(ws.cell(row=row_num, column=5), r.get("max_sf"), align=CENTER)
 
-        # Starting price
-        c_sp = ws.cell(row=row_num, column=6)
-        c_sp.value = start_price
-        c_sp.number_format = '"$"#,##0'
-        c_sp.font = NORMAL_FONT
-        c_sp.alignment = RIGHT
-        c_sp.border = THIN_BORDER
+        # Avg Interior SF = mid of min/max (live formula)
+        apply_data(ws.cell(row=row_num, column=6),
+                   f"=AVERAGE(D{row_num}:E{row_num})", align=CENTER, number_format=SF_FMT)
 
-        # Top-end price
-        c_tp = ws.cell(row=row_num, column=7)
-        c_tp.value = top_price
-        c_tp.number_format = '"$"#,##0'
-        c_tp.font = NORMAL_FONT
-        c_tp.alignment = RIGHT
-        c_tp.border = THIN_BORDER
+        apply_data(ws.cell(row=row_num, column=7), r.get("starting_price"),
+                   align=RIGHT, number_format=MONEY_FMT)
+        apply_data(ws.cell(row=row_num, column=8), r.get("top_end_price"),
+                   align=RIGHT, number_format=MONEY_FMT)
 
-        # Starting PPSF = Starting Price / Min SF (formula)
-        c_psf = ws.cell(row=row_num, column=8)
-        if min_sf and start_price:
-            c_psf.value = f"=IF(D{row_num}>0,F{row_num}/D{row_num},\"-\")"
-        else:
-            c_psf.value = "-"
-        c_psf.number_format = '"$"#,##0'
-        c_psf.font = NORMAL_FONT
-        c_psf.alignment = RIGHT
-        c_psf.border = THIN_BORDER
+        # Avg Price = mid of starting/top-end (AVERAGE ignores a blank top-end)
+        apply_data(ws.cell(row=row_num, column=9),
+                   f"=AVERAGE(G{row_num}:H{row_num})", align=RIGHT, number_format=MONEY_FMT)
+
+        # Starting PPSF = Starting Price / Min SF
+        apply_data(ws.cell(row=row_num, column=10),
+                   f"=IF(D{row_num}>0,G{row_num}/D{row_num},\"-\")",
+                   align=RIGHT, number_format=PSF_FMT)
 
         ws.row_dimensions[row_num].height = 18
 
-    # Weighted average PPSF footer
-    footer_row = data_start + len(rows)
-    ws.row_dimensions[footer_row].height = 20
+    data_end = data_start + len(rows) - 1
+    c_rng = f"C{data_start}:C{data_end}"
+    f_rng = f"F{data_start}:F{data_end}"
+    i_rng = f"I{data_start}:I{data_end}"
 
-    apply_data(ws.cell(row=footer_row, column=1), "WEIGHTED AVERAGE PPSF", bold=True, fill=LIGHT_GREY)
-    ws.cell(row=footer_row, column=1).alignment = RIGHT
-    for col in range(2, 8):
-        ws.cell(row=footer_row, column=col).fill = LIGHT_GREY
-        ws.cell(row=footer_row, column=col).border = THIN_BORDER
+    # ── Weighted Averages block (MLA standard methodology) ──
+    block_header = data_end + 2
+    ws.merge_cells(f"A{block_header}:J{block_header}")
+    ws[f"A{block_header}"].value = "Weighted Averages — SUMPRODUCT(average × unit count) / total unit count"
+    ws[f"A{block_header}"].font = BOLD_FONT
 
-    # SUMPRODUCT formula: counts × starting PPSF / total count
-    c_range = f"C{data_start}:C{footer_row - 1}"
-    h_range = f"H{data_start}:H{footer_row - 1}"
-    avg_cell = ws.cell(row=footer_row, column=8)
-    avg_cell.value = f"=IF(SUMPRODUCT({c_range},{h_range})>0,SUMPRODUCT({c_range},{h_range})/SUM({c_range}),\"-\")"
-    avg_cell.number_format = '"$"#,##0'
-    avg_cell.font = BOLD_FONT
-    avg_cell.alignment = RIGHT
-    avg_cell.border = THIN_BORDER
-    avg_cell.fill = LIGHT_GREY
+    sf_row = block_header + 2     # Weighted Avg Interior SF row
+    price_row = block_header + 3  # Weighted Avg Price row
+    block_rows = [
+        ("Total Units", f"=SUM({c_rng})", "#,##0"),
+        ("Weighted Avg Interior SF", f"=SUMPRODUCT({f_rng},{c_rng})/SUM({c_rng})", SF_FMT),
+        (relabel("Weighted Avg Price (Mid of Starting/Top-End)", price_label),
+         f"=SUMPRODUCT({i_rng},{c_rng})/SUM({c_rng})", MONEY_FMT),
+        (relabel("Average PSF (Weighted Avg Price / Weighted Avg SF)", price_label),
+         f"=J{price_row}/J{sf_row}", PSF_FMT),
+    ]
+
+    for i, (label, formula, fmt) in enumerate(block_rows):
+        r = block_header + 1 + i
+        ws.merge_cells(f"A{r}:I{r}")
+        c = ws[f"A{r}"]
+        c.value = label
+        c.font = NORMAL_FONT
+        c.alignment = RIGHT
+        for col in range(1, 11):
+            ws.cell(row=r, column=col).fill = LIGHT_GREY
+            ws.cell(row=r, column=col).border = THIN_BORDER
+        v = ws.cell(row=r, column=10)
+        v.value = formula
+        v.number_format = fmt
+        v.font = BOLD_FONT
+        v.alignment = RIGHT
+        ws.row_dimensions[r].height = 18
 
     # Yellow note below
-    note_row = footer_row + 1
-    ws.merge_cells(f"A{note_row}:H{note_row}")
-    ws[f"A{note_row}"].value = "* Yellow cells (Count) are editable — update to recalculate the weighted average PPSF automatically."
+    note_row = block_header + len(block_rows) + 2
+    ws.merge_cells(f"A{note_row}:J{note_row}")
+    ws[f"A{note_row}"].value = ("* Yellow cells (Count) are editable — all averages recalculate automatically. "
+                                "Avg SF = mid of min/max; Avg Price = mid of starting/top-end.")
     ws[f"A{note_row}"].font = Font(name="Calibri", size=9, italic=True, color="666666")
     ws[f"A{note_row}"].fill = PatternFill("solid", fgColor="FFFACD")
 
@@ -202,7 +222,7 @@ DETAIL_HEADERS = [
 COL_WIDTHS_DETAIL = [18, 16, 9, 14, 18, 14]
 
 
-def build_detail_sheet(ws, project_name: str, rows: list[dict]):
+def build_detail_sheet(ws, project_name: str, rows: list[dict], price_label: str = "Price"):
     ws.title = "Plan Detail"
 
     ws.merge_cells("A1:F1")
@@ -217,7 +237,7 @@ def build_detail_sheet(ws, project_name: str, rows: list[dict]):
         ws.column_dimensions[get_column_letter(i)].width = w
 
     for col_idx, header in enumerate(DETAIL_HEADERS, start=1):
-        apply_header(ws.cell(row=2, column=col_idx), header)
+        apply_header(ws.cell(row=2, column=col_idx), relabel(header, price_label))
     ws.row_dimensions[2].height = 20
 
     detail_row = 3
@@ -252,23 +272,12 @@ def build_detail_sheet(ws, project_name: str, rows: list[dict]):
                 sf_display = min_sf or ""
             apply_data(ws.cell(row=detail_row, column=4), sf_display, align=CENTER)
 
-            c_sp = ws.cell(row=detail_row, column=5)
-            c_sp.value = start_price
-            c_sp.number_format = '"$"#,##0'
-            c_sp.font = NORMAL_FONT
-            c_sp.alignment = RIGHT
-            c_sp.border = THIN_BORDER
+            apply_data(ws.cell(row=detail_row, column=5), start_price,
+                       align=RIGHT, number_format=MONEY_FMT)
 
-            c_psf = ws.cell(row=detail_row, column=6)
-            if min_sf and start_price:
-                psf = round(start_price / min_sf)
-                c_psf.value = psf
-            else:
-                c_psf.value = ""
-            c_psf.number_format = '"$"#,##0'
-            c_psf.font = NORMAL_FONT
-            c_psf.alignment = RIGHT
-            c_psf.border = THIN_BORDER
+            psf = round(start_price / min_sf, 2) if (min_sf and start_price) else ""
+            apply_data(ws.cell(row=detail_row, column=6), psf,
+                       align=RIGHT, number_format=PSF_FMT)
 
             ws.row_dimensions[detail_row].height = 18
             detail_row += 1
@@ -282,13 +291,16 @@ def build(data_path: str, output_path: str):
 
     project_name = data.get("project_name", "Project")
     rows = data.get("rows", [])
+    # Set "price_label" in the JSON to relabel columns for rental projects,
+    # e.g. "Rent (Monthly)" — prices then read as monthly rents throughout.
+    price_label = data.get("price_label", "Price")
 
     wb = Workbook()
     ws_summary = wb.active
-    build_summary_sheet(ws_summary, project_name, rows)
+    build_summary_sheet(ws_summary, project_name, rows, price_label)
 
     ws_detail = wb.create_sheet()
-    build_detail_sheet(ws_detail, project_name, rows)
+    build_detail_sheet(ws_detail, project_name, rows, price_label)
 
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)

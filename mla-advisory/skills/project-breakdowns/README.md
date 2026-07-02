@@ -13,7 +13,7 @@ Trigger on: "project breakdown for [project]", "pricing summary", "count units f
 ## Outputs
 
 - `[ProjectName]_Pricing_Summary.xlsx`
-  - **Summary** sheet — one row per unit type, SUMPRODUCT weighted avg PPSF footer
+  - **Summary** sheet — one row per unit type, Weighted Averages footer block: SUMPRODUCT(avg of min/max sizes & start/top-end prices, counts) / total count; Average PSF = weighted avg price ÷ weighted avg SF
   - **Plan Detail** sheet — one row per individual plan name
 
 ## Bundled script

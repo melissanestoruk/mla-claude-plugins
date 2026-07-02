@@ -1,6 +1,6 @@
 ---
 name: project-breakdowns
-version: 2026-06-24 v1
+version: 2026-07-02 v2
 status: active
 shareable: true
 owner: ryan-lalonde
@@ -32,8 +32,11 @@ Produces a formatted Excel pricing analysis for a presale residential project. R
 | Unit types | Floor plans or user | e.g. Studio, 1 Bed, 1 Bed+Den, Jr. 2 Bed, 2 Bed/2 Bath, Jr. 3 Bed, 3 Bed |
 | Level grouping rules | User (ask if unclear) | e.g. "Levels 3 and 4 share the same layout" means each highlighted position counts ×2 for those levels |
 | Top-end price | User (ask if not on price sheet) | Estimated upper range for each unit type |
+| Floor premium | User (optional) | If given (e.g. "$15 per floor"), estimate top-end = starting price + premium × (highest floor of the type − lowest floor of the type). Use the elevation gain to the type's topmost unit even if the type skips floors in between. |
 
 If the user has already supplied some of this in the conversation, use it — don't re-ask.
+
+**Rental projects:** if the prices are monthly rents (magnitudes like $1,800–$3,500 for apartments — Warrington Residential buildings, lease-up work), set `"price_label": "Rent (Monthly)"` in the JSON so columns are labelled as rent and PSF shows as e.g. $3.52. Confirm the interpretation with the user in your summary.
 
 ## Step 1 — Count units from floor plan thumbnails
 
@@ -108,21 +111,29 @@ The JSON data format:
 }
 ```
 
-`top_end_price` is optional — pass null if unknown; the cell will be left blank.
+`top_end_price` is optional — pass null if unknown; the cell will be left blank and the row's Avg Price falls back to the starting price. Optional top-level key `"price_label"` (e.g. `"Rent (Monthly)"`) relabels the price columns for rental projects.
 
 Save the output file to the user's workspace folder. Present it when done.
 
-## SUMPRODUCT formula logic
+## SUMPRODUCT formula logic (MLA standard — Melissa Nestoruk, 2026-07-02)
 
-The weighted average PPSF at the bottom of the Summary sheet uses:
+Per data row, the Summary sheet computes:
+
+- **Avg Interior SF** = `AVERAGE(min SF, max SF)`
+- **Avg Price** = `AVERAGE(starting price, top-end price)`
+
+The Weighted Averages block at the bottom of the Summary sheet then uses:
 
 ```
-=IF(SUM(counts)>0, SUMPRODUCT(counts, starting_ppsf) / SUM(counts), "-")
+Total Units              =SUM(counts)
+Weighted Avg Interior SF =SUMPRODUCT(avg SFs, counts) / SUM(counts)
+Weighted Avg Price       =SUMPRODUCT(avg prices, counts) / SUM(counts)
+Average PSF              =Weighted Avg Price / Weighted Avg SF
 ```
 
-Where `starting_ppsf` per row = Starting Price ÷ Min SF.
+A per-row **Starting PPSF** column (starting price ÷ min SF) is also shown for reference.
 
-The formula is live in Excel — if the user updates counts or prices, the weighted average recalculates automatically. Count cells (column C) are highlighted in yellow to signal they are editable inputs.
+All formulas are live in Excel — if the user updates counts, sizes, or prices, everything recalculates automatically. Count cells (column C) are highlighted in yellow to signal they are editable inputs.
 
 ## When bash is unavailable
 
@@ -133,5 +144,5 @@ If the shell is not accessible, write the openpyxl build code inline and run it 
 **Filename:** `[ProjectName]_Pricing_Summary.xlsx`  
 **Location:** User's workspace folder  
 **Sheets:**
-- **Summary** — one row per unit type, SUMPRODUCT weighted avg PPSF in footer row
+- **Summary** — one row per unit type, Weighted Averages block (SUMPRODUCT) in footer
 - **Plan Detail** — one row per individual plan name (more granular breakdown)
