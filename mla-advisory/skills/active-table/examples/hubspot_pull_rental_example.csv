@@ -1,0 +1,11 @@
+Record ID,Name,Developer,Submarket,Construction Type,Storeys,Occupancy Date,Avg Unit Size Estimate,Avg Rent Estimate,Initial PSF,Units Leased,Leases Per Month,Total Units
+1001,The Dunbar,Strand,Dunbar,WF,5,1/15/2026,575,,,,,77
+1002,The Elms,Strand,Kerrisdale,WF,6,1/15/2026,580,,,,,91
+1003,The Raven,Westbank,Kitsilano,CON,15,1/10/2026,570,3020,5.30,25,17,131
+1004,Fourth & Mac,Third Space Properties,Kitsilano,WF,6,12/1/2025,630,3530,5.40,,,99
+1005,Neighbour On 4th,Orr Development,Kitsilano,WF,6,11/1/2025,570,2935,5.15,27,14,54
+1006,Signal (Ash),Intracorp & Oxford,Marpole,CON,32,9/1/2025,620,3040,4.90,100,25,255
+1007,West 42 (West),Mera,Oakridge,CON,19,8/15/2025,575,2990,5.20,97,22,161
+1008,The Stories,PCI Group,Fairview,CON,40,8/1/2025,620,3535,5.70,100,20,182
+1009,19 On The Greenway,PCI Group,Arbutus,CON,92,7/1/2025,615,3290,5.35,84,14,92
+1010,The Beaumont,Domus Homes,Shaughnessy,WF,3,6/1/2025,675,3040,4.50,52,7,86
