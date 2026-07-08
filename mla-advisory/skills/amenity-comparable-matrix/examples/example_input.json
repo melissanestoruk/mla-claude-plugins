@@ -1,0 +1,19 @@
+{
+  "title": "Amenity Comparables Matrix",
+  "intro": "Below is an amenity matrix for the relevant actively selling developments, with common amenities compared across the competitive set.",
+  "projects": [
+    {"name": "Prima", "strata": 0.6, "amenities": ["FITNESS CENTRE", "ENTERTAINMENT LOUNGE + KITCHEN", "OUTDOOR LOUNGE WITH BBQ", "YOGA/BARRE ROOM"]},
+    {"name": "Rose Garden", "strata": 0.27, "amenities": ["CHILDREN'S PLAY AREA"]},
+    {"name": "One Park (Phase 3)", "strata": 0.56, "amenities": ["FITNESS CENTRE", "ENTERTAINMENT LOUNGE + KITCHEN", "OUTDOOR LOUNGE WITH BBQ", "YOGA/BARRE ROOM", "FIREPITS", "CHILDREN'S PLAY AREA", "COMMUNITY GARDEN/PARK SPACE", "MUSIC ROOM", "GAMES ROOM"]},
+    {"name": "Aviary", "strata": 0.22, "amenities": ["ENTERTAINMENT LOUNGE + KITCHEN", "GAMES ROOM", "OUTDOOR LOUNGE WITH BBQ", "CHILDREN'S PLAY AREA"]},
+    {"name": "Talistar (Phase 1: Aurora)", "strata": 0.73, "amenities": ["POOL/HOT TUB/COLD PLUNGE", "FITNESS CENTRE", "CO-WORKING SPACE", "CHILDREN'S PLAY AREA", "YOGA/BARRE ROOM", "SAUNA/STEAM ROOM", "ENTERTAINMENT LOUNGE + KITCHEN", "OUTDOOR LOUNGE WITH BBQ", "COMMUNITY GARDEN/PARK SPACE"]},
+    {"name": "NorthGate Residences", "strata": 0.28, "amenities": ["OUTDOOR LOUNGE WITH BBQ", "CHILDREN'S PLAY AREA"]},
+    {"name": "8899 Spires", "strata": 0.28, "amenities": ["FITNESS CENTRE", "CHILDREN'S PLAY AREA"]},
+    {"name": "Parc Thompson (Ph. 3)", "strata": 0.25, "amenities": ["ENTERTAINMENT LOUNGE + KITCHEN"]},
+    {"name": "Park Residences II (C)", "strata": 0.61, "amenities": ["ENTERTAINMENT LOUNGE + KITCHEN", "FITNESS CENTRE", "CHILDREN'S PLAY AREA", "CO-WORKING SPACE", "SPORTS SIMULATOR", "PARCEL LOCKERS"]},
+    {"name": "Cavendish", "strata": 0.22, "amenities": ["OUTDOOR LOUNGE WITH BBQ", "CHILDREN'S PLAY AREA"]},
+    {"name": "Sunpeak", "strata": 0.35, "amenities": ["CHILDREN'S PLAY AREA"]},
+    {"name": "Quilchena West", "strata": 0.38, "amenities": ["OUTDOOR LOUNGE WITH BBQ", "ENTERTAINMENT LOUNGE + KITCHEN", "CHILDREN'S PLAY AREA", "FITNESS CENTRE"]},
+    {"name": "Milano at Capstan Village (Phase 3)", "strata": 0.5, "amenities": ["ENTERTAINMENT LOUNGE + KITCHEN", "GAMES ROOM", "OUTDOOR LOUNGE WITH BBQ", "CHILDREN'S PLAY AREA", "SPORTS COURT /BOCCE/PUTTING GREEN", "FITNESS CENTRE", "CO-WORKING SPACE"]}
+  ]
+}
