@@ -1,0 +1,31 @@
+{
+  "title": "Unit Mix Comparables – Concrete Condominium",
+  "intro": "The table below highlights the size ranges, unit mixes, and pricing for active concrete condominiums in Vancouver. The following trends observed are aimed to provide context to the unit mix programming of the most recently selling projects in this market.",
+  "projects": [
+    {
+      "name": "Vesa at Little Mountain",
+      "developer": "Holborn Developments",
+      "units": [
+        {"type": "1 Bed", "count": 25, "min_sf": 495, "max_sf": 592},
+        {"type": "1 Bed + Den", "count": 17, "min_sf": 549, "max_sf": 617},
+        {"type": "2 Bed", "count": 4, "min_sf": 664, "max_sf": 795},
+        {"type": "2 Bed + Den", "count": 34, "min_sf": 774, "max_sf": 899},
+        {"type": "2 Bed + Den + Flex", "count": 1, "min_sf": 804, "max_sf": 804},
+        {"type": "3 Bed + Den", "count": 6, "min_sf": 1149, "max_sf": 1210}
+      ]
+    },
+    {
+      "name": "Latitude on Cambie",
+      "developer": "Transca",
+      "units": [
+        {"type": "Studio", "count": 18, "min_sf": 439, "max_sf": 453},
+        {"type": "1 Bed", "count": 10, "min_sf": 470, "max_sf": 525},
+        {"type": "1 Bed + Den", "count": 38, "min_sf": 537, "max_sf": 637},
+        {"type": "2 Bed", "count": 20, "min_sf": 671, "max_sf": 794},
+        {"type": "2 Bed + Den", "count": 29, "min_sf": 766, "max_sf": 834},
+        {"type": "3 Bed", "count": 12, "min_sf": 843, "max_sf": 935},
+        {"type": "3 Bed + Den", "count": 4, "min_sf": 904, "max_sf": 1182}
+      ]
+    }
+  ]
+}
