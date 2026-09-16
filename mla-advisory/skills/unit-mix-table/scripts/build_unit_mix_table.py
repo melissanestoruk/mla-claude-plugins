@@ -41,7 +41,8 @@ TEMPLATES = os.path.join(HERE, '..', 'templates')
 
 W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 A = '{http://schemas.openxmlformats.org/drawingml/2006/main}'
-EN_DASH = '–'
+# plain hyphen: the MLA office-output-lock gate rejects em/en dashes in document text
+EN_DASH = '-'
 
 
 # ------------------------------------------------------------- computation
@@ -194,11 +195,18 @@ def build_word(data, output):
 
     for tr in trs[1:]:
         tbl.remove(tr)
-    for proj in data['projects']:
+    for idx, proj in enumerate(data['projects']):
         tr = copy.deepcopy(proto_row)
         tcs = tr.findall(W + 'tc')
         for tc, lines, protos in zip(tcs, project_lines(proj), cell_protos):
             docx_fill_cell(tc, lines, protos)
+        # alternate row banding: odd projects white, even grey (gold look)
+        fill = 'FFFFFF' if idx % 2 == 0 else 'F2F2F2'
+        for tc in tcs:
+            tc_pr = tc.find(W + 'tcPr')
+            shd = tc_pr.find(W + 'shd') if tc_pr is not None else None
+            if shd is not None:
+                shd.set(W + 'fill', fill)
         tbl.append(tr)
 
     save_with_part(template, output, 'word/document.xml',
