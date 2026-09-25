@@ -1,0 +1,14 @@
+{
+  "title": "Recently Stabilized",
+  "writeup": "The table below provides an overview of concrete purpose-built rental developments that have stabilized in Vancouver West over the past five years; projects under 50 units were excluded from the comparable set. Larger-scale projects such as West 42 (West Building), Arbutus Residences (North and South Towers), and W2 required longer lease-up periods of approximately 11 to 18 months due to their size, though they maintained steady absorption throughout their leasing cycles. In contrast, Wilkinson stabilized over a much shorter timeframe, absorbing its 104 units in approximately three months. Excluding Wilkinson as an outlier at the high end of the set, leasing velocity ranged from approximately 6 to 16 units per month, averaging approximately 11 units per month. At this average pace, a 100-unit project would be expected to reach stabilization in approximately 9 months.",
+  "rows": [
+    {"project": "The Raven", "developer": "Westbank", "market": "Point Grey", "storeys": 14, "period_start": "Oct 2025", "period_end": "Jun 2026", "avg_sf": 570, "avg_rent": 2680, "psf": 5.10, "units": 131},
+    {"project": "West 42 (West Building)", "developer": "Marcon", "market": "Cambie Corr.", "storeys": 19, "period_start": "Jul 2025", "period_end": "May 2026", "avg_sf": 575, "avg_rent": 2900, "psf": 5.50, "units": 175},
+    {"project": "19 on the Greenway", "developer": "PCI Group", "market": "Kerrisdale", "storeys": 6, "period_start": "May 2025", "period_end": "Jan 2026", "avg_sf": 615, "avg_rent": 3290, "psf": 5.25, "units": 92},
+    {"project": "Arbutus Residences - South Twr", "developer": "Larco Investments", "market": "Kerrisdale", "storeys": 8, "period_start": "Jun 2022", "period_end": "Jun 2023", "avg_sf": 990, "avg_rent": 4205, "psf": 4.25, "units": 138},
+    {"project": "W8 Living", "developer": "Colliers", "market": "Fairview", "storeys": 18, "period_start": "Aug 2021", "period_end": "Mar 2022", "avg_sf": 720, "avg_rent": 2990, "psf": 4.15, "units": 74},
+    {"project": "Wilkinson", "developer": "Cressey", "market": "False Creek", "storeys": 10, "period_start": "Apr 2021", "period_end": "Jun 2021", "avg_sf": 555, "avg_rent": 2055, "psf": 3.70, "units": 104},
+    {"project": "Arbutus Residences - North Twr", "developer": "Larco Investments", "market": "Kerrisdale", "storeys": 8, "period_start": "Apr 2021", "period_end": "Sep 2022", "avg_sf": 885, "avg_rent": 3585, "psf": 4.05, "units": 109},
+    {"project": "W2", "developer": "Aurmon Development", "market": "False Creek", "storeys": 12, "period_start": "Apr 2021", "period_end": "Jun 2022", "avg_sf": 725, "avg_rent": 2865, "psf": 3.95, "units": 128}
+  ]
+}
