@@ -1,7 +1,7 @@
 ---
 name: unit-mix-table
-description: Builds an MLA Unit Mix Breakdown Table (comparables table, one row per project with unit types, counts, mix percents, and size ranges) from per-project floorplan screenshots — typically Avesdo/NHSLive "Floorplan Data" panels. Outputs Word or PowerPoint, same layout for sale and rental/condo product. Use this skill whenever floorplan-data screenshots are dropped for one or more projects and someone asks for a unit mix table, unit mix breakdown, unit mix comparables, or "run the unit mix table". NOT the same as unit-mix-summary (which aggregates pasted unit mix data across projects into one statistical summary table) — this skill produces the per-project breakdown table; its output can feed unit-mix-summary. Also NOT for active tables, offerings, completions, upcoming, or amenity matrices — separate skills.
-version: 2026-07-07 v1
+description: Builds an MLA Unit Mix Breakdown Table (comparables table, one row per project with unit types, counts, mix percents, and size ranges) from per-project floorplan screenshots — typically Avesdo/NHSLive "Floorplan Data" panels. Outputs Word or PowerPoint for the standard 5-column table; a rental variant (--variant rental, Word only) builds the 7-column "Unit Mix Comparables - Purpose-Built Rental" chart with gross rent and rental PSF. Use this skill whenever floorplan-data screenshots are dropped for one or more projects and someone asks for a unit mix table, unit mix breakdown, unit mix comparables, or "run the unit mix table". NOT the same as unit-mix-summary (which aggregates pasted unit mix data across projects into one statistical summary table) — this skill produces the per-project breakdown table; its output can feed unit-mix-summary. Also NOT for active tables, offerings, completions, upcoming, or amenity matrices — separate skills.
+version: 2026-11-10 v2
 status: draft
 shareable: true
 owner: melissa-nestoruk
@@ -67,15 +67,58 @@ Deliver with a one-line note on the file location. One canonical file per artifa
 
 ## Known behaviours
 
-- Same table layout for for-sale and rental/condo product — no variants.
+- Two variants: `forsale` (default, the 5-column table, Word or PPT) and `rental` (7-column, Word only, see below).
 - Word column order: PROJECT, UNIT TYPE, UNIT COUNT, UNIT MIX, SIZE RANGE. PPT order: PROJECT, FLOOR PLAN, SF, UNIT COUNT, UNIT MIX % — the script handles the swap.
 - The Word gold renders as 2 pages (floating table layout); that matches the original template, not a bug.
 - PPT slide footer text comes from the deck master — self-corrects when pasted into a project deck.
 - This skill's output is a valid input to the existing `unit-mix-summary` skill (aggregated statistical summary across the comp set).
 
+## Rental variant (purpose-built rental chart)
+
+Use when the comp set is actively leasing purpose-built rental projects and the chart needs rents and rental PSF (for example the 888 Cambie / Vancouver West rental unit mix chart). Word only; `--format ppt --variant rental` exits with an error.
+
+Columns: PROJECT, FLOORPLAN, UNITS, UNIT MIX, SQFT, GROSS RENT RANGE, GROSS RENTAL PSF. One row per project; one paragraph per floorplan line in each cell; UNITS ends with a bold `N TOTAL`, UNIT MIX with a bold `100%`. Project name bold over developer, all caps.
+
+Input JSON (see `examples/example_input_rental.json`). `rent` and `psf` are free-text strings used exactly as given (`"$2,400+"`, `"$2,071 - $2,150"`, `"-"`):
+
+```json
+{"title": "Unit Mix Comparables - Purpose-Built Rental",
+ "intro": "...",
+ "projects": [{"name": "W71", "developer": "Birmingham & Wood",
+   "units": [{"type": "1 Bed", "count": 25, "min_sf": 446, "max_sf": 570,
+              "rent": "$2,000 - $2,350", "psf": "$4.12 - $4.48"}]}]}
+```
+
+Run:
+
+```
+python -I scripts/build_unit_mix_table.py --data <rental.json> --format word --variant rental --output <Rental Unit Mix Chart.docx>
+```
+
+Intro boilerplate (swap the market; keep the last sentence only when initial lease-up ranges were used):
+> The table below highlights the size ranges, unit mixes, and rental rates for actively leasing purpose-built rental developments in [market]. The following trends observed are aimed at providing context to the unit mix programming of the most recently leasing projects in this market. Where current asking rents were unavailable for select unit types due to limited availability, pricing ranges from the project's initial lease-up program were used based on publicly available information.
+
+Pricing conventions:
+- Use what is posted. Where only "from" pricing exists, show `start+` for rent and PSF+ = start rent divided by the row's minimum SF.
+- Where current asking rents are unavailable, use the project's initial lease-up ranges (and keep the intro sentence saying so).
+- A PSF range is min rent / min SF to max rent / max SF, shown low to high.
+- SQFT is `min - max` or a single number, with thousands separators. Use plain hyphens everywhere (the brand gate rejects en and em dashes), including the title.
+
+Layout rules (built into the script):
+- **Each page is its own chart.** The heading repeats at the top of every page, the intro paragraph appears on page 1 only, and each page has its own table with its own header row. Page 2+ headings carry pageBreakBefore. Projects are grouped greedily by line count (plan lines plus one TOTAL line per project); capacities are the constants `CAP_FIRST_PAGE = 26` (page 1, with intro) and `CAP_NEXT_PAGE = 31` at the top of the rental block in the script. If a project count or font change makes a page spill, adjust them and re-render.
+- **Banding starts grey on every page.** The header row is white, so project rows alternate F2F2F2, FFFFFF, F2F2F2 and restart grey at the top of each page. Fills are explicit (`w:shd clear/auto/fill`) with themeFill and themeFillShade removed; the source chart's "white" rows carried themeFillShade=F2, which Word draws grey.
+- Body rows carry no fixed row height and have 85 dxa top and bottom cell margins.
+- The landscape section is the document's final section (no trailing blank portrait page).
+- Rows keep the order given in the JSON (newest occupancy first in the 888 Cambie chart).
+- Stdlib only (no python-docx).
+
+Verify the rental output: export to PDF with Word (`ExportAsFixedFormat`, format 17), render the pages, and check every page is landscape with the heading, the intro only on page 1, a grey first row on each page then alternating, no blank page, and no table spilling across a page break. The 11-project 888 Cambie set renders as 3 pages.
+
 ## Files
 
 - `templates/unit_mix_table_template.docx` — gold Word (landscape, Plain-style banded table)
 - `templates/unit_mix_table_template.pptx` — gold PowerPoint slide
-- `scripts/build_unit_mix_table.py` — the builder (stdlib only)
+- `templates/unit_mix_table_rental_template.docx` — gold rental Word (landscape, 7 columns, one prototype row, grey fill)
+- `scripts/build_unit_mix_table.py` — the builder (stdlib only; `--variant forsale|rental`)
 - `examples/example_input.json` — sample input built from a real Avesdo floorplan screenshot
+- `examples/example_input_rental.json` — rental variant sample (W71, Maple+41, Westward)

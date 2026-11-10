@@ -1,0 +1,160 @@
+{
+  "title": "Unit Mix Comparables - Purpose-Built Rental",
+  "intro": "The table below highlights the size ranges, unit mixes, and rental rates for actively leasing purpose-built rental developments in Vancouver West. The following trends observed are aimed at providing context to the unit mix programming of the most recently leasing projects in this market. Where current asking rents were unavailable for select unit types due to limited availability, pricing ranges from the project's initial lease-up program were used based on publicly available information.",
+  "projects": [
+    {
+      "name": "W71",
+      "developer": "BIRMINGHAM & WOOD",
+      "units": [
+        {
+          "type": "1 BED",
+          "count": 25,
+          "min_sf": 446,
+          "max_sf": 570,
+          "rent": "$2,000 - $2,350",
+          "psf": "$4.12 - $4.48"
+        },
+        {
+          "type": "2 BED",
+          "count": 11,
+          "min_sf": 653,
+          "max_sf": 901,
+          "rent": "$2,550 - $3,300",
+          "psf": "$3.66 - $3.91"
+        },
+        {
+          "type": "3 BED",
+          "count": 3,
+          "min_sf": 863,
+          "max_sf": 899,
+          "rent": "$3,200 - $3,300",
+          "psf": "$3.67 - $3.71"
+        }
+      ]
+    },
+    {
+      "name": "WESTWARD",
+      "developer": "INTRACORP HOMES",
+      "units": [
+        {
+          "type": "STUDIO",
+          "count": 12,
+          "min_sf": 365,
+          "max_sf": 475,
+          "rent": "$2,100 - $2,290",
+          "psf": "$4.82 - $5.75"
+        },
+        {
+          "type": "STUDIO + FLEX",
+          "count": 15,
+          "min_sf": 408,
+          "max_sf": 452,
+          "rent": "$2,300 - $2,500",
+          "psf": "$5.53 - $5.64"
+        },
+        {
+          "type": "JR 1 BED + DEN",
+          "count": 53,
+          "min_sf": 464,
+          "max_sf": 539,
+          "rent": "$2,385 - $2,405",
+          "psf": "$4.46 - $5.14"
+        },
+        {
+          "type": "1 BED",
+          "count": 1,
+          "min_sf": 573,
+          "max_sf": 573,
+          "rent": "$2,800",
+          "psf": "$4.89"
+        },
+        {
+          "type": "1 BED + FLEX",
+          "count": 13,
+          "min_sf": 536,
+          "max_sf": 605,
+          "rent": "$2,700 - $2,905",
+          "psf": "$4.80 - $5.04"
+        },
+        {
+          "type": "2 BED (1 BATH)",
+          "count": 10,
+          "min_sf": 629,
+          "max_sf": 677,
+          "rent": "$3,430 - $3,495",
+          "psf": "$5.16 - $5.45"
+        },
+        {
+          "type": "2 BED (2 BATH)",
+          "count": 13,
+          "min_sf": 692,
+          "max_sf": 778,
+          "rent": "$3,660 - $3,945",
+          "psf": "$5.07 - $5.29"
+        },
+        {
+          "type": "2 BED + FLEX",
+          "count": 23,
+          "min_sf": 723,
+          "max_sf": 798,
+          "rent": "$3,755 - $3,965",
+          "psf": "$4.97 - $5.19"
+        },
+        {
+          "type": "3 BED",
+          "count": 1,
+          "min_sf": 932,
+          "max_sf": 932,
+          "rent": "$4,995",
+          "psf": "$5.36"
+        },
+        {
+          "type": "TH - 2 BED",
+          "count": 8,
+          "min_sf": 1020,
+          "max_sf": 1042,
+          "rent": "$4,980 - $5,305",
+          "psf": "$4.88 - $5.09"
+        }
+      ]
+    },
+    {
+      "name": "MAPLE+41",
+      "developer": "SIGHTLINE PROPERTIES",
+      "units": [
+        {
+          "type": "STUDIO",
+          "count": 16,
+          "min_sf": 412,
+          "max_sf": 491,
+          "rent": "$2,250 - $2,450",
+          "psf": "$4.99 - $5.46"
+        },
+        {
+          "type": "1 BED",
+          "count": 26,
+          "min_sf": 468,
+          "max_sf": 565,
+          "rent": "$2,540 - $2,750",
+          "psf": "$4.87 - $5.43"
+        },
+        {
+          "type": "2 BED",
+          "count": 20,
+          "min_sf": 649,
+          "max_sf": 895,
+          "rent": "$3,545 - $4,250",
+          "psf": "$4.75 - $5.46"
+        },
+        {
+          "type": "TH - 3 BED",
+          "count": 1,
+          "min_sf": 1054,
+          "max_sf": 1161,
+          "rent": "$4,725 - $5,440",
+          "psf": "$4.48 - $4.69"
+        }
+      ]
+    }
+  ]
+}

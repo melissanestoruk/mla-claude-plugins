@@ -23,6 +23,14 @@ Clone-and-swap on the gold templates in ../templates/. Input is a JSON file
 Usage:
   python build_unit_mix_table.py --data data.json --format word --output out.docx
   python build_unit_mix_table.py --data data.json --format ppt  --output out.pptx
+  python build_unit_mix_table.py --data rental.json --format word --variant rental --output out.docx
+
+--variant rental (Word only) builds the 7-column "Unit Mix Comparables - Purpose-Built
+Rental" chart: PROJECT, FLOORPLAN, UNITS, UNIT MIX, SQFT, GROSS RENT RANGE, GROSS RENTAL PSF.
+Each unit line carries free-text "rent" and "psf" strings, e.g.
+  {"type": "1 BED", "count": 25, "min_sf": 446, "max_sf": 570,
+   "rent": "$2,000 - $2,350", "psf": "$4.12 - $4.48"}
+Every page is its own chart (heading repeated, blurb on page 1 only, own header row).
 
 Stdlib only. One table row per project; unit mix percents are computed
 (round half up, '<1%' for anything under 1 percent), TOTAL lines are bold.
@@ -228,6 +236,151 @@ def docx_para_set_text(p, text):
     t.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
 
 
+# ----------------------------------------------------- Word rental variant
+
+# Table lines per page (plan lines + 1 TOTAL line per project). Calibrated against the
+# 888 Cambie chart: page 1 carries the blurb, later pages do not. Verify with a real render.
+CAP_FIRST_PAGE = 26
+CAP_NEXT_PAGE = 31
+
+
+def rental_cell_lines(proj):
+    """Return (total, six column line-lists) for one rental project row.
+    Columns after PROJECT: FLOORPLAN, UNITS, UNIT MIX, SQFT, GROSS RENT RANGE, GROSS RENTAL PSF."""
+    units = proj['units']
+    total = sum(u.get('count') or 0 for u in units)
+    return total, [
+        [u['type'].upper() for u in units],
+        [f"{u.get('count') or 0:,}" for u in units],
+        [pct_label(u.get('count') or 0, total) for u in units],
+        [size_label(u.get('min_sf'), u.get('max_sf')) for u in units],
+        [(u.get('rent') or '-') for u in units],
+        [(u.get('psf') or '-') for u in units],
+    ]
+
+
+def set_row_fill(tr, fill):
+    """Explicit fill only. Theme attributes are removed: themeFillShade=F2 makes Word
+    draw 'white' rows grey."""
+    for tc in tr.findall(W + 'tc'):
+        shd = tc.find(W + 'tcPr').find(W + 'shd')
+        for a in ('themeFill', 'themeFillShade', 'themeFillTint'):
+            shd.attrib.pop(W + a, None)
+        shd.set(W + 'val', 'clear')
+        shd.set(W + 'color', 'auto')
+        shd.set(W + 'fill', fill)
+
+
+def _clear_runs(p):
+    for r in p.findall(W + 'r'):
+        p.remove(r)
+    return p
+
+
+def build_word_rental(data, output):
+    template = os.path.join(TEMPLATES, 'unit_mix_table_rental_template.docx')
+    xml = load_part(template, 'word/document.xml')
+    root = parse_keep_ns(xml)
+    body = root.find(W + 'body')
+
+    title_p = body.findall(W + 'p')[0]
+    intro_p = body.findall(W + 'p')[1]
+    if data.get('title'):
+        docx_para_set_text(title_p, data['title'])
+    if data.get('intro'):
+        docx_para_set_text(intro_p, data['intro'])
+
+    tbl = body.find(W + 'tbl')
+    trs = tbl.findall(W + 'tr')
+    proto_row = trs[1]
+    for tr in trs[1:]:
+        tbl.remove(tr)
+    tbl_blank = copy.deepcopy(tbl)            # header-only table for pages 2+
+    spacer_p = copy.deepcopy(body.findall(W + 'p')[-1])   # tiny paragraph after the table
+
+    # prototypes: first paragraph = plan line, last paragraph = tail (TOTAL / 100% / blank)
+    pcells = proto_row.findall(W + 'tc')
+    name_proto = copy.deepcopy(pcells[0].findall(W + 'p')[0])
+    dev_proto = copy.deepcopy(pcells[0].findall(W + 'p')[1])
+    line_protos = [copy.deepcopy(tc.findall(W + 'p')[0]) for tc in pcells[1:]]
+    tail_protos = [copy.deepcopy(tc.findall(W + 'p')[-1]) for tc in pcells[1:]]
+
+    rows = []  # (lines_on_page, tr)
+    for proj in data['projects']:
+        total, cols = rental_cell_lines(proj)
+        tr = copy.deepcopy(proto_row)
+        tcs = tr.findall(W + 'tc')
+        for p in tcs[0].findall(W + 'p'):
+            tcs[0].remove(p)
+        pn = copy.deepcopy(name_proto)
+        docx_para_set_text(pn, proj['name'].upper())
+        tcs[0].append(pn)
+        pd = copy.deepcopy(dev_proto)
+        dev = (proj.get('developer') or '').upper()
+        if dev:
+            docx_para_set_text(pd, dev)
+        else:
+            _clear_runs(pd)
+        tcs[0].append(pd)
+        for ci, (tc, lines) in enumerate(zip(tcs[1:], cols)):
+            for p in tc.findall(W + 'p'):
+                tc.remove(p)
+            for text in lines:
+                np_ = copy.deepcopy(line_protos[ci])
+                docx_para_set_text(np_, text)
+                tc.append(np_)
+            tail = copy.deepcopy(tail_protos[ci])
+            if ci == 1:
+                docx_para_set_text(tail, f'{total:,} TOTAL')
+            elif ci == 2:
+                docx_para_set_text(tail, '100%')
+            else:
+                _clear_runs(tail)
+            tc.append(tail)
+        rows.append((len(proj['units']) + 1, tr))
+
+    # greedy pagination by line count
+    pages, cur, used = [], [], 0
+    for n, tr in rows:
+        cap = CAP_FIRST_PAGE if not pages else CAP_NEXT_PAGE
+        if cur and used + n > cap:
+            pages.append(cur)
+            cur, used = [], 0
+        cur.append(tr)
+        used += n
+    pages.append(cur)
+
+    anchor = tbl
+    for pi, page_rows in enumerate(pages):
+        if pi == 0:
+            t = tbl
+        else:
+            h = copy.deepcopy(title_p)
+            ppr = h.find(W + 'pPr')
+            if ppr is None:
+                ppr = ET.Element(W + 'pPr')
+                h.insert(0, ppr)
+            ppr.insert(0, ET.Element(W + 'pageBreakBefore'))
+            t = copy.deepcopy(tbl_blank)
+            # order after the previous table's spacer paragraph: heading, table, spacer
+            at = list(body).index(anchor) + 2   # skip the previous table's spacer paragraph
+            body.insert(at, h)
+            body.insert(at + 1, t)
+            body.insert(at + 2, copy.deepcopy(spacer_p))
+        for i, tr in enumerate(page_rows):
+            set_row_fill(tr, 'FFFFFF' if i % 2 else 'F2F2F2')   # header row is white, so each page starts grey
+            trpr = tr.find(W + 'trPr')
+            if trpr is not None:
+                for hgt in trpr.findall(W + 'trHeight'):
+                    trpr.remove(hgt)
+            t.append(tr)
+        anchor = t
+
+    save_with_part(template, output, 'word/document.xml',
+                   serialize_restore_root(root, xml, 'document'))
+    return len(pages)
+
+
 # ------------------------------------------------------- PowerPoint building
 
 def pptx_prototypes(tc):
@@ -329,7 +482,13 @@ def main():
     ap.add_argument('--data', required=True, help='JSON input file')
     ap.add_argument('--format', choices=['word', 'ppt'], required=True)
     ap.add_argument('--output', required=True)
+    ap.add_argument('--variant', choices=['forsale', 'rental'], default='forsale',
+                    help='forsale (default): 5-column table, Word or PPT. '
+                         'rental: 7-column purpose-built rental chart, Word only.')
     args = ap.parse_args()
+    if args.variant == 'rental' and args.format != 'word':
+        sys.exit('ERROR: --variant rental is Word only (the rental chart has no PowerPoint '
+                 'version). Re-run with --format word.')
 
     with open(args.data, encoding='utf-8') as f:
         data = json.load(f)
@@ -339,7 +498,10 @@ def main():
         if not proj.get('units'):
             sys.exit(f"ERROR: project {proj.get('name')} has no units")
 
-    if args.format == 'word':
+    if args.variant == 'rental':
+        n = build_word_rental(data, args.output)
+        print(f'Rental chart: {len(data["projects"])} projects across {n} page(s)')
+    elif args.format == 'word':
         build_word(data, args.output)
     else:
         build_ppt(data, args.output)
