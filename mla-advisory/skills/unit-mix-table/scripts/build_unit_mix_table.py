@@ -31,6 +31,9 @@ Each unit line carries free-text "rent" and "psf" strings, e.g.
   {"type": "1 BED", "count": 25, "min_sf": 446, "max_sf": 570,
    "rent": "$2,000 - $2,350", "psf": "$4.12 - $4.48"}
 Every page is its own chart (heading repeated, blurb on page 1 only, own header row).
+A project may carry an optional "note" string; it becomes a footnote (see SKILL.md): stars
+numbered per page, restarting on each page, appended to the project name, with the footnote
+text directly under that page's table.
 
 Stdlib only. One table row per project; unit mix percents are computed
 (round half up, '<1%' for anything under 1 percent), TOTAL lines are bold.
@@ -291,6 +294,11 @@ def build_word_rental(data, output):
         docx_para_set_text(intro_p, data['intro'])
 
     tbl = body.find(W + 'tbl')
+    # a floating table (tblpPr) would let footnotes render beside/over it; keep it inline
+    for tp in list(tbl.iter(W + 'tblpPr')):
+        for par in tbl.iter():
+            if tp in list(par):
+                par.remove(tp)
     trs = tbl.findall(W + 'tr')
     proto_row = trs[1]
     for tr in trs[1:]:
@@ -305,7 +313,17 @@ def build_word_rental(data, output):
     line_protos = [copy.deepcopy(tc.findall(W + 'p')[0]) for tc in pcells[1:]]
     tail_protos = [copy.deepcopy(tc.findall(W + 'p')[-1]) for tc in pcells[1:]]
 
-    rows = []  # (lines_on_page, tr)
+    def note_para(text):
+        """Footnote paragraph: clone of the intro paragraph at 7pt."""
+        fp = copy.deepcopy(intro_p)
+        docx_para_set_text(fp, text)
+        for sz in fp.iter(W + 'sz'):
+            sz.set(W + 'val', '14')
+        for sz in fp.iter(W + 'szCs'):
+            sz.set(W + 'val', '14')
+        return fp
+
+    rows = []  # (lines_on_page, tr, proj, name_paragraph)
     for proj in data['projects']:
         total, cols = rental_cell_lines(proj)
         tr = copy.deepcopy(proto_row)
@@ -337,21 +355,35 @@ def build_word_rental(data, output):
             else:
                 _clear_runs(tail)
             tc.append(tail)
-        rows.append((len(proj['units']) + 1, tr))
+        rows.append((len(proj['units']) + 1, tr, proj, pn))
 
     # greedy pagination by line count
     pages, cur, used = [], [], 0
-    for n, tr in rows:
+    for n, tr, proj, pn in rows:
         cap = CAP_FIRST_PAGE if not pages else CAP_NEXT_PAGE
         if cur and used + n > cap:
             pages.append(cur)
             cur, used = [], 0
-        cur.append(tr)
+        cur.append((tr, proj, pn))
         used += n
     pages.append(cur)
 
+    # Footnotes: asterisks numbered by order of appearance on each page, restarting at
+    # one asterisk on every new page. The stars are appended to the project name.
+    page_notes = []
+    for page in pages:
+        stars, notes = 0, []
+        for tr, proj, pn in page:
+            note = (proj.get('note') or '').strip()
+            if note:
+                stars += 1
+                docx_para_set_text(pn, proj['name'].upper() + '*' * stars)
+                notes.append('*' * stars + note)
+        page_notes.append(notes)
+
     anchor = tbl
     for pi, page_rows in enumerate(pages):
+        page_rows = [r[0] for r in page_rows]
         if pi == 0:
             t = tbl
         else:
@@ -362,8 +394,9 @@ def build_word_rental(data, output):
                 h.insert(0, ppr)
             ppr.insert(0, ET.Element(W + 'pageBreakBefore'))
             t = copy.deepcopy(tbl_blank)
-            # order after the previous table's spacer paragraph: heading, table, spacer
-            at = list(body).index(anchor) + 2   # skip the previous table's spacer paragraph
+            # heading goes after the previous page's footnotes + spacer (anchor = last
+            # element of the previous page); the new page gets its own table and spacer
+            at = list(body).index(anchor) + 1
             body.insert(at, h)
             body.insert(at + 1, t)
             body.insert(at + 2, copy.deepcopy(spacer_p))
@@ -374,7 +407,12 @@ def build_word_rental(data, output):
                 for hgt in trpr.findall(W + 'trHeight'):
                     trpr.remove(hgt)
             t.append(tr)
-        anchor = t
+        # footnotes sit directly under the table, before the spacer paragraph
+        at = list(body).index(t) + 1
+        for note in page_notes[pi]:
+            body.insert(at, note_para(note))
+            at += 1
+        anchor = body[at]          # the spacer paragraph that follows this page's table
 
     save_with_part(template, output, 'word/document.xml',
                    serialize_restore_root(root, xml, 'document'))

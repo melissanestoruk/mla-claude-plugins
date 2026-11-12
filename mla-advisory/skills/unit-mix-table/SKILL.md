@@ -1,7 +1,7 @@
 ---
 name: unit-mix-table
 description: Builds an MLA Unit Mix Breakdown Table (comparables table, one row per project with unit types, counts, mix percents, and size ranges) from per-project floorplan screenshots — typically Avesdo/NHSLive "Floorplan Data" panels. Outputs Word or PowerPoint for the standard 5-column table; a rental variant (--variant rental, Word only) builds the 7-column "Unit Mix Comparables - Purpose-Built Rental" chart with gross rent and rental PSF. Use this skill whenever floorplan-data screenshots are dropped for one or more projects and someone asks for a unit mix table, unit mix breakdown, unit mix comparables, or "run the unit mix table". NOT the same as unit-mix-summary (which aggregates pasted unit mix data across projects into one statistical summary table) — this skill produces the per-project breakdown table; its output can feed unit-mix-summary. Also NOT for active tables, offerings, completions, upcoming, or amenity matrices — separate skills.
-version: 2026-11-10 v2
+version: 2026-11-12 v3
 status: draft
 shareable: true
 owner: melissa-nestoruk
@@ -104,6 +104,13 @@ Pricing conventions:
 - A PSF range is min rent / min SF to max rent / max SF, shown low to high.
 - SQFT is `min - max` or a single number, with thousands separators. Use plain hyphens everywhere (the brand gate rejects en and em dashes), including the title.
 
+Footnote rule (confirmed by Melissa, 2026-11-12):
+- A project may carry an optional `"note"` string (`projects[].note`), for example `"Unit mix per the rezoning application (65 homes); current marketing indicates 67 homes."` Only a note about one project's own data goes here.
+- A note that applies to the whole chart (not one project) goes in the intro/writeup paragraph, not in a footnote.
+- Asterisks are numbered by order of appearance ON EACH PAGE and restart at one asterisk on every new page: the first noted project on a page gets `*`, the second `**`, and so on. The stars are appended to the project name in the table (`W70*`).
+- Each footnote sits directly under the table on the SAME page as its project: one paragraph per footnote, in star order, about 7pt, starting with the stars (`*Unit mix per the rezoning application...`). The footnotes follow the page split (`CAP_FIRST_PAGE` / `CAP_NEXT_PAGE`), so a project that moves to page 2 takes its footnote with it and is numbered from `*` again.
+- The page 2+ heading is inserted after the previous page's footnotes, and the script removes the template's floating-table setting (`w:tblpPr`) so footnotes render below the table.
+
 Layout rules (built into the script):
 - **Each page is its own chart.** The heading repeats at the top of every page, the intro paragraph appears on page 1 only, and each page has its own table with its own header row. Page 2+ headings carry pageBreakBefore. Projects are grouped greedily by line count (plan lines plus one TOTAL line per project); capacities are the constants `CAP_FIRST_PAGE = 26` (page 1, with intro) and `CAP_NEXT_PAGE = 31` at the top of the rental block in the script. If a project count or font change makes a page spill, adjust them and re-render.
 - **Banding starts grey on every page.** The header row is white, so project rows alternate F2F2F2, FFFFFF, F2F2F2 and restart grey at the top of each page. Fills are explicit (`w:shd clear/auto/fill`) with themeFill and themeFillShade removed; the source chart's "white" rows carried themeFillShade=F2, which Word draws grey.
@@ -112,7 +119,7 @@ Layout rules (built into the script):
 - Rows keep the order given in the JSON (newest occupancy first in the 888 Cambie chart).
 - Stdlib only (no python-docx).
 
-Verify the rental output: export to PDF with Word (`ExportAsFixedFormat`, format 17), render the pages, and check every page is landscape with the heading, the intro only on page 1, a grey first row on each page then alternating, no blank page, and no table spilling across a page break. The 11-project 888 Cambie set renders as 3 pages.
+Verify the rental output: export to PDF with Word (`ExportAsFixedFormat`, format 17), render the pages, and check every page is landscape, footnotes sit under their own page's table (stars restart on each page), with the heading, the intro only on page 1, a grey first row on each page then alternating, no blank page, and no table spilling across a page break. The 11-project 888 Cambie set renders as 3 pages.
 
 ## Files
 
